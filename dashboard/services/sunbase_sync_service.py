@@ -505,6 +505,8 @@ def run_full_sync():
         result["appointmentStatus"] = _sync_appointments()
         result["success"] = True
     except Exception as exc:  # pylint: disable=broad-except
+        print("SYNC ERROR:", str(exc))
+        raise  # 🔥 VERY IMPORTANT
         result["error"] = str(exc)
     finally:
         result["duration"] = int((time.time() - start) * 1000)
