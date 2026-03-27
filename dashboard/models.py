@@ -1,0 +1,125 @@
+from django.db import models
+from django.utils import timezone
+
+
+class TimeStampedSoftDeleteModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def soft_delete(self):
+        self.deleted_at = timezone.now()
+        self.save(update_fields=["deleted_at", "updated_at"])
+
+
+class Project(TimeStampedSoftDeleteModel):
+    first_name = models.CharField(max_length=255, blank=True)
+    last_name = models.CharField(max_length=255, blank=True)
+    sales_rep = models.CharField(max_length=255, blank=True)
+    sales_team = models.CharField(max_length=255, blank=True)
+    installer = models.CharField(max_length=255, blank=True)
+    lead_source = models.CharField(max_length=255, blank=True)
+    job_status = models.CharField(max_length=255)
+    project_category = models.CharField(max_length=64)
+    contract_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    customer_since = models.DateField(null=True, blank=True)
+    install_date = models.DateField(null=True, blank=True)
+    site_survey_scheduled = models.DateField(null=True, blank=True)
+    crc_date = models.DateField(null=True, blank=True)
+    permit_approved = models.DateField(null=True, blank=True)
+    install_completed = models.DateField(null=True, blank=True)
+    pto_submitted = models.DateField(null=True, blank=True)
+    cancellation_reason = models.CharField(max_length=255, blank=True)
+    on_hold_reason = models.CharField(max_length=255, blank=True)
+    is_clean_deal = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-id"]
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}".strip() or f"Project {self.id}"
+
+
+class CxProject(TimeStampedSoftDeleteModel):
+    row_number = models.IntegerField(null=True, blank=True)
+    first_name = models.CharField(max_length=255, blank=True)
+    last_name = models.CharField(max_length=255, blank=True)
+    job_status = models.CharField(max_length=255, blank=True)
+    installer = models.CharField(max_length=255, blank=True)
+    install_date = models.DateField(null=True, blank=True)
+    install_completed = models.DateField(null=True, blank=True)
+    inspection_scheduled = models.DateField(null=True, blank=True)
+    inspection_passed = models.DateField(null=True, blank=True)
+    pto_submitted = models.DateField(null=True, blank=True)
+    pto_approved = models.DateField(null=True, blank=True)
+    review_captured_date = models.DateField(null=True, blank=True)
+    testimonial_potential = models.BooleanField(default=False)
+    testimonial_done = models.BooleanField(default=False)
+    model_home_program = models.BooleanField(default=False)
+    has_review = models.BooleanField(default=False)
+    days_install_to_inspection_passed = models.IntegerField(null=True, blank=True)
+    days_install_to_pto_submitted = models.IntegerField(null=True, blank=True)
+    days_install_to_pto_approved = models.IntegerField(null=True, blank=True)
+    days_install_to_review = models.IntegerField(null=True, blank=True)
+    days_inspection_scheduled_to_passed = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-id"]
+
+
+class Door(TimeStampedSoftDeleteModel):
+    row_number = models.IntegerField(null=True, blank=True)
+    first_name = models.CharField(max_length=255, blank=True)
+    last_name = models.CharField(max_length=255, blank=True)
+    address = models.CharField(max_length=500, blank=True)
+    city = models.CharField(max_length=255, blank=True)
+    state = models.CharField(max_length=64, blank=True)
+    canvasser = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=80, blank=True)
+    create_time = models.DateTimeField(null=True, blank=True)
+    appt_time = models.DateTimeField(null=True, blank=True)
+    is_contact = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-id"]
+
+
+class Appointment(TimeStampedSoftDeleteModel):
+    row_number = models.IntegerField(null=True, blank=True)
+    first_name = models.CharField(max_length=255, blank=True)
+    last_name = models.CharField(max_length=255, blank=True)
+    address = models.CharField(max_length=500, blank=True)
+    city = models.CharField(max_length=255, blank=True)
+    state = models.CharField(max_length=64, blank=True)
+    zip_code = models.CharField(max_length=32, blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    appointment_datetime = models.DateTimeField(null=True, blank=True)
+    lead_source = models.CharField(max_length=255, blank=True)
+    lead_date = models.DateField(null=True, blank=True)
+    language = models.CharField(max_length=50, blank=True)
+    salvage_notes = models.TextField(blank=True)
+    deal_stage = models.CharField(max_length=255, blank=True)
+    sales_rep = models.CharField(max_length=255, blank=True)
+    setter = models.CharField(max_length=255, blank=True)
+    sales_team = models.CharField(max_length=255, blank=True)
+    is_blitz_deal = models.BooleanField(default=False)
+    is_self_set = models.BooleanField(default=False)
+    stage_category = models.CharField(max_length=50, blank=True)
+
+    class Meta:
+        ordering = ["-id"]
+
+
+class SyncRun(models.Model):
+    success = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    duration_ms = models.IntegerField(default=0)
+    payload = models.JSONField(default=dict)
+    error = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
