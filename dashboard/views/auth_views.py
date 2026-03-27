@@ -11,6 +11,7 @@ from dashboard.utils import success_response
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         username = request.data.get("username")
@@ -37,6 +38,10 @@ class LoginView(APIView):
 
 class RefreshTokenView(APIView):
     permission_classes = [AllowAny]
+    # Do not run JWTAuthentication here: clients send an expired access token in
+    # Authorization while posting a valid refresh body; validating the header first
+    # returns 401 before TokenRefreshSerializer runs.
+    authentication_classes = []
 
     def post(self, request):
         serializer = TokenRefreshSerializer(data=request.data)
