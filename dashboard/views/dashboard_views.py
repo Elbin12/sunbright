@@ -16,7 +16,7 @@ class OverviewView(APIView):
 
     def get(self, request):
         d0, d1 = parse_dashboard_date_range(request)
-        return Response(success_response(get_overview_metrics(d0, d1)))
+        return Response(success_response(get_overview_metrics(d0, d1, request.user)))
 
 
 class CategoryBreakdownView(APIView):
@@ -24,7 +24,7 @@ class CategoryBreakdownView(APIView):
 
     def get(self, request):
         d0, d1 = parse_dashboard_date_range(request)
-        return Response(success_response(get_category_breakdown(d0, d1)))
+        return Response(success_response(get_category_breakdown(d0, d1, request.user)))
 
 
 class CancellationReasonsView(APIView):
@@ -32,7 +32,7 @@ class CancellationReasonsView(APIView):
 
     def get(self, request):
         d0, d1 = parse_dashboard_date_range(request)
-        return Response(success_response(get_cancellation_reasons_breakdown(d0, d1)))
+        return Response(success_response(get_cancellation_reasons_breakdown(d0, d1, request.user)))
 
 
 class OnHoldReasonsView(APIView):
@@ -40,4 +40,4 @@ class OnHoldReasonsView(APIView):
 
     def get(self, request):
         d0, d1 = parse_dashboard_date_range(request)
-        return Response(success_response(get_on_hold_reasons_breakdown(d0, d1)))
+        return Response(success_response(get_on_hold_reasons_breakdown(d0, d1, request.user)))

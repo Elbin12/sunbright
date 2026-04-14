@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -112,6 +114,52 @@ class Appointment(TimeStampedSoftDeleteModel):
 
     class Meta:
         ordering = ["-id"]
+
+
+class DashboardDataScope(models.Model):
+    """
+    Limits dashboard metrics for non-staff users to a sales team or rep.
+    Staff (is_staff) always bypass scope and see the full organization.
+    """
+
+    class ScopeKind(models.TextChoices):
+        TEAM = "team", "Single sales team"
+        TEAMS = "teams", "Multiple sales teams"
+        REP = "rep", "Single sales rep"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="dashboard_scope",
+    )
+    scope_kind = models.CharField(
+        max_length=16,
+        choices=ScopeKind.choices,
+        default=ScopeKind.REP,
+    )
+    sales_team = models.CharField(max_length=255, blank=True)
+    sales_rep = models.CharField(max_length=255, blank=True)
+    sales_teams = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        verbose_name = "Dashboard data scope"
+        verbose_name_plural = "Dashboard data scopes"
+
+    def clean(self):
+        k = self.scope_kind
+        if k == self.ScopeKind.TEAM:
+            if not (self.sales_team or "").strip():
+                raise ValidationError({"sales_team": "Required for single-team scope."})
+        elif k == self.ScopeKind.TEAMS:
+            names = [n.strip() for n in (self.sales_teams or []) if isinstance(n, str) and n.strip()]
+            if not names:
+                raise ValidationError({"sales_teams": "Add at least one team name."})
+        elif k == self.ScopeKind.REP:
+            if not (self.sales_rep or "").strip():
+                raise ValidationError({"sales_rep": "Required for rep scope."})
+
+    def __str__(self):
+        return f"Scope({self.user_id}, {self.scope_kind})"
 
 
 class SyncRun(models.Model):

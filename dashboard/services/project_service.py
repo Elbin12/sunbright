@@ -1,10 +1,11 @@
 from django.db.models import Case, Count, F, Q, Sum, When
 
 from dashboard.models import Project
+from dashboard.scope import project_scope_q
 
 
-def base_queryset(date_from=None, date_to=None):
-    qs = Project.objects.filter(deleted_at__isnull=True)
+def base_queryset(date_from=None, date_to=None, user=None):
+    qs = Project.objects.filter(deleted_at__isnull=True).filter(project_scope_q(user))
     if date_from:
         qs = qs.filter(customer_since__gte=date_from)
     if date_to:
@@ -12,9 +13,9 @@ def base_queryset(date_from=None, date_to=None):
     return qs
 
 
-def get_overview_metrics(date_from=None, date_to=None):
+def get_overview_metrics(date_from=None, date_to=None, user=None):
     """KPI block aligned with sunbright-dashboard `getOverviewStats` (fields we can compute today)."""
-    qs = base_queryset(date_from, date_to)
+    qs = base_queryset(date_from, date_to, user)
     total = qs.count()
     active = qs.filter(project_category="Active").count()
     cancelled = qs.filter(project_category="Cancelled").count()
@@ -62,27 +63,27 @@ def get_overview_metrics(date_from=None, date_to=None):
     }
 
 
-def get_category_breakdown(date_from=None, date_to=None):
+def get_category_breakdown(date_from=None, date_to=None, user=None):
     return list(
-        base_queryset(date_from, date_to)
+        base_queryset(date_from, date_to, user)
         .values("project_category")
         .annotate(count=Count("id"))
         .order_by("-count")
     )
 
 
-def get_on_hold_projects(date_from=None, date_to=None):
-    return base_queryset(date_from, date_to).filter(project_category="On Hold")
+def get_on_hold_projects(date_from=None, date_to=None, user=None):
+    return base_queryset(date_from, date_to, user).filter(project_category="On Hold")
 
 
-def get_cancelled_projects(date_from=None, date_to=None):
-    return base_queryset(date_from, date_to).filter(project_category="Cancelled")
+def get_cancelled_projects(date_from=None, date_to=None, user=None):
+    return base_queryset(date_from, date_to, user).filter(project_category="Cancelled")
 
 
-def get_cancellation_reasons_breakdown(date_from=None, date_to=None):
+def get_cancellation_reasons_breakdown(date_from=None, date_to=None, user=None):
     """Group cancelled projects by parsed cancellation_reason, or full job_status if reason not extracted."""
     rows = (
-        base_queryset(date_from, date_to)
+        base_queryset(date_from, date_to, user)
         .filter(project_category="Cancelled")
         .annotate(
             reason=Case(
@@ -97,10 +98,10 @@ def get_cancellation_reasons_breakdown(date_from=None, date_to=None):
     return [{"reason": r["reason"] or "Unknown", "count": r["count"]} for r in rows]
 
 
-def get_on_hold_reasons_breakdown(date_from=None, date_to=None):
+def get_on_hold_reasons_breakdown(date_from=None, date_to=None, user=None):
     """Group on-hold projects by parsed on_hold_reason, or full job_status if reason not extracted."""
     rows = (
-        base_queryset(date_from, date_to)
+        base_queryset(date_from, date_to, user)
         .filter(project_category="On Hold")
         .annotate(
             reason=Case(

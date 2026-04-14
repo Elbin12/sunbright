@@ -82,3 +82,18 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Google Sign-In (verify ID tokens from the SPA). Set VITE_GOOGLE_CLIENT_ID to the same Web client ID.
+GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "").strip()
+# Optional: restrict sign-in to addresses like "user@yourdomain.com"
+GOOGLE_OAUTH_ALLOWED_DOMAIN = os.getenv("GOOGLE_OAUTH_ALLOWED_DOMAIN", "").strip().lower()
+# Comma-separated emails that receive is_staff=True on first Google login (Django admin can also promote users)
+GOOGLE_OAUTH_ADMIN_EMAILS = frozenset(
+    e.strip().lower()
+    for e in os.getenv("GOOGLE_OAUTH_ADMIN_EMAILS", "").split(",")
+    if e.strip()
+)
+
+# AI insights (POST /api/insights/generate/): without BUILT_IN_FORGE_API_KEY, responses use local heuristics from DB metrics.
+# With key: OpenAI-compatible Forge API (same env names as sunbright-dashboard). Optional: BUILT_IN_FORGE_API_URL,
+# BUILT_IN_FORGE_MODEL, BUILT_IN_FORGE_TIMEOUT_SECONDS (default 120).

@@ -18,13 +18,14 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from dashboard.models import Appointment, CxProject, Door
+from dashboard.scope import appointment_scope_q, cx_scope_q, door_scope_q
 from dashboard.services.project_service import base_queryset
 
 _ZERO_MONEY = Value(0, output_field=DecimalField(max_digits=15, decimal_places=2))
 
 
-def _cx_qs(date_from=None, date_to=None):
-    qs = CxProject.objects.filter(deleted_at__isnull=True)
+def _cx_qs(date_from=None, date_to=None, user=None):
+    qs = CxProject.objects.filter(deleted_at__isnull=True).filter(cx_scope_q(user))
     if date_from:
         qs = qs.filter(install_date__gte=date_from)
     if date_to:
@@ -32,8 +33,8 @@ def _cx_qs(date_from=None, date_to=None):
     return qs
 
 
-def _door_qs(date_from=None, date_to=None):
-    qs = Door.objects.filter(deleted_at__isnull=True)
+def _door_qs(date_from=None, date_to=None, user=None):
+    qs = Door.objects.filter(deleted_at__isnull=True).filter(door_scope_q(user))
     if date_from:
         qs = qs.filter(create_time__date__gte=date_from)
     if date_to:
@@ -41,8 +42,8 @@ def _door_qs(date_from=None, date_to=None):
     return qs
 
 
-def _appt_qs(date_from=None, date_to=None):
-    qs = Appointment.objects.filter(deleted_at__isnull=True)
+def _appt_qs(date_from=None, date_to=None, user=None):
+    qs = Appointment.objects.filter(deleted_at__isnull=True).filter(appointment_scope_q(user))
     if date_from:
         qs = qs.filter(appointment_datetime__date__gte=date_from)
     if date_to:
@@ -250,8 +251,8 @@ def _aggregate_clean_deal_dimension(rows, group_field_names):
     return out[:200]
 
 
-def get_clean_deals_bundle(date_from=None, date_to=None):
-    qs = base_queryset(date_from, date_to)
+def get_clean_deals_bundle(date_from=None, date_to=None, user=None):
+    qs = base_queryset(date_from, date_to, user)
     today = timezone.now().date()
 
     analysis = [
@@ -306,8 +307,8 @@ def _retention_row(base_qs, group_fields):
     return out
 
 
-def get_retention_bundle(date_from=None, date_to=None):
-    qs = base_queryset(date_from, date_to)
+def get_retention_bundle(date_from=None, date_to=None, user=None):
+    qs = base_queryset(date_from, date_to, user)
     return {
         "byRep": _retention_row(qs.exclude(sales_rep=""), ["sales_rep", "sales_team"]),
         "byTeam": _retention_row(qs.exclude(sales_team=""), ["sales_team"]),
@@ -316,8 +317,8 @@ def get_retention_bundle(date_from=None, date_to=None):
     }
 
 
-def get_performance_bundle(date_from=None, date_to=None):
-    qs = base_queryset(date_from, date_to)
+def get_performance_bundle(date_from=None, date_to=None, user=None):
+    qs = base_queryset(date_from, date_to, user)
     perf_cols = ("customer_since", "install_date", "is_clean_deal")
     rep_install_rows = list(qs.exclude(sales_rep="").values("sales_rep", "sales_team", *perf_cols))
     rep_install = _avg_install_metrics_by_group(rep_install_rows, ("sales_rep", "sales_team"))
@@ -455,11 +456,11 @@ def get_performance_bundle(date_from=None, date_to=None):
     return {"reps": rep_list, "teams": team_list, "installers": inst_list}
 
 
-def get_pipeline_bundle(date_from=None, date_to=None):
+def get_pipeline_bundle(date_from=None, date_to=None, user=None):
     """
     Mirrors sunbright-dashboard getPipelineVelocity + getPipelineVelocityAvg using Project milestone dates.
     """
-    qs = base_queryset(date_from, date_to)
+    qs = base_queryset(date_from, date_to, user)
     today = timezone.now().date()
     fields = (
         "id",
@@ -560,8 +561,8 @@ def get_pipeline_bundle(date_from=None, date_to=None):
     return {"velocity": velocity, "averages": averages}
 
 
-def get_cx_bundle(date_from=None, date_to=None):
-    cx = _cx_qs(date_from, date_to)
+def get_cx_bundle(date_from=None, date_to=None, user=None):
+    cx = _cx_qs(date_from, date_to, user)
     total = cx.count()
     reviews = cx.filter(has_review=True).count()
     overview = {
@@ -772,9 +773,9 @@ def _manager_overview_counts(appts, doors):
     }
 
 
-def get_manager_bundle(date_from=None, date_to=None):
-    appts = _appt_qs(date_from, date_to)
-    doors = _door_qs(date_from, date_to)
+def get_manager_bundle(date_from=None, date_to=None, user=None):
+    appts = _appt_qs(date_from, date_to, user)
+    doors = _door_qs(date_from, date_to, user)
 
     rep_rows = (
         appts.exclude(sales_rep="")
@@ -900,7 +901,7 @@ def get_manager_bundle(date_from=None, date_to=None):
             }
         )
 
-    pq = base_queryset(date_from, date_to)
+    pq = base_queryset(date_from, date_to, user)
     overview = {
         "totalProjects": pq.count(),
         "activeProjects": pq.filter(project_category="Active").count(),

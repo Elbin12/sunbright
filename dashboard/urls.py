@@ -13,7 +13,7 @@ from dashboard.views.analytics_views import (
     ProjectsOnHoldView,
     RetentionView,
 )
-from dashboard.views.auth_views import LoginView, RefreshTokenView
+from dashboard.views.auth_views import GoogleLoginView, LoginView, RefreshTokenView
 from dashboard.views.dashboard_views import (
     CancellationReasonsView,
     CategoryBreakdownView,
@@ -21,12 +21,14 @@ from dashboard.views.dashboard_views import (
     OverviewView,
 )
 from dashboard.views.project_viewset import ProjectViewSet
+from dashboard.views.user_admin_views import DashboardUserDetailView, DashboardUserListView
 
 router = DefaultRouter()
 router.register("projects", ProjectViewSet, basename="projects")
 
 urlpatterns = [
     path("auth/login/", LoginView.as_view(), name="auth-login"),
+    path("auth/google/", GoogleLoginView.as_view(), name="auth-google"),
     path("auth/refresh/", RefreshTokenView.as_view(), name="auth-refresh"),
     path("dashboard/overview/", OverviewView.as_view(), name="dashboard-overview"),
     path("dashboard/category-breakdown/", CategoryBreakdownView.as_view(), name="dashboard-category-breakdown"),
@@ -46,6 +48,8 @@ urlpatterns = [
     path("manager/", ManagerPerformanceView.as_view(), name="manager"),
     path("insights/generate/", InsightsGenerateView.as_view(), name="insights-generate"),
     path("sync/", DataSyncView.as_view(), name="sync"),
+    path("users/", DashboardUserListView.as_view(), name="dashboard-users"),
+    path("users/<str:pk>/", DashboardUserDetailView.as_view(), name="dashboard-user-detail"),
 ]
 
 urlpatterns += router.urls
